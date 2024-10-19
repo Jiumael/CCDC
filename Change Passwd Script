@@ -1,0 +1,30 @@
+# Generate a random password function
+function Generate-RandomPassword {
+    param (
+        [int]$length = 12
+    )
+    [char[]]$chars = @(
+        'a'..'z' + 'A'..'Z' + '0'..'9' + '@', '#', '!', '%', '&', '*'
+    ) -join ''
+    -join ((1..$length) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
+}
+
+# Get all local user accounts (excluding system accounts)
+$users = Get-LocalUser | Where-Object { 
+    $_.Name -ne "Administrator" -and 
+    $_.Name -ne "Guest" -and 
+    $_.Enabled -eq $true 
+}
+
+# Loop through each user and change their password
+foreach ($user in $users) {
+    $newPassword = Generate-RandomPassword
+    try {
+        # Set the new password for the user
+        $user | Set-LocalUser -Password (ConvertTo-SecureString $newPassword -AsPlainText -Force)
+        Write-Output "Password for user $($user.Name) changed successfully to: $newPassword"
+    } catch {
+        Write-Output "Failed to change password for user $($user.Name): $_"
+    }
+}
+
